@@ -2,6 +2,8 @@
 
 **Make progress, together.**
 
+🌐 **[Open Teamstride](https://teamstride-project-planner.lilacbrush15.chatgpt.site)**
+
 Teamstride is a collaborative project workspace built for HackPSU. It helps teams turn an idea into a plan, share responsibilities, and track small wins along the way.
 
 ## Features
