@@ -1,0 +1,14 @@
+export type Member={id:string;name:string;email:string;userId?:string;status:'active'|'pending'};
+export type Comment={id:string;author:string;text:string;at:string};
+export type Task={id:string;title:string;detail:string;assignees:string[];phase:number;date:string;done:boolean;comments:Comment[]};
+export type Project={id:string;title:string;brief:string;members:Member[];start:string;end:string;tasks:Task[];creatorId:string;creatorEmail:string;theme:string;emoji:string;status:'active'|'completed';revision:number};
+export type Profile={name:string;bio:string;emoji:string;notes?:string};
+export type Identity={userId:string;email:string;displayName:string};
+export const phases=['Discover','Create','Refine','Deliver'];
+export const themes=[{id:'lilac',name:'Lilac dreams',color:'#7954cf',pale:'#f0e8ff'},{id:'peach',name:'Peach party',color:'#c66142',pale:'#ffebe1'},{id:'mint',name:'Mint condition',color:'#267969',pale:'#e0f4e8'},{id:'sky',name:'Blue skies',color:'#3d70b7',pale:'#e6f0ff'},{id:'pink',name:'Pink lemonade',color:'#b44982',pale:'#ffe6f2'}];
+export const uid=()=>typeof crypto.randomUUID==='function'?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+export function createPlan(title:string,brief:string,members:Member[],start:string,end:string):Task[]{
+const software=/app|website|software|code|platform/i.test(brief+' '+title),research=/research|report|study|essay/i.test(brief+' '+title);
+const specs=[['Define the goal & deliverables',`Create a checklist of outcomes for ${title}. ${brief}`,0],['Research & gather inspiration',`Find reliable sources and examples for ${title}.`,0],['Map the project approach','Agree on structure, tools and success criteria.',0],[software?'Build the core experience':research?'Write the evidence-based draft':'Create the first version',`Develop the main deliverable for ${title}.`,1],['Develop supporting content','Produce the visuals, evidence or supporting pieces required by the brief.',1],['Bring the pieces together','Combine the team’s work and identify any gaps.',1],['Review with the team','Collect feedback and check the work against the project goals.',2],['Polish & quality check','Resolve feedback, check accuracy and test the finished deliverable.',2],['Prepare the final handoff','Organize final files and rehearse a concise explanation.',3],['Submit & celebrate','Complete the handoff, confirm receipt and reflect on what worked.',3]] as const;
+return specs.map((s,i)=>{const d=new Date(start+'T12:00:00');d.setDate(d.getDate()+Math.round((new Date(end+'T12:00:00').getTime()-d.getTime())/86400000*(i+1)/10));return {id:uid(),title:s[0],detail:s[1],assignees:i===6?members.map(m=>m.id):[members[i%members.length].id],phase:s[2],date:d.toISOString().slice(0,10),done:false,comments:[]}})}
+export const progress=(p:Project)=>p.tasks.length?Math.round(p.tasks.filter(t=>t.done).length/p.tasks.length*100):0;

@@ -1,0 +1,4 @@
+import {z} from 'zod';
+import {identity,db,failure} from '../../../lib/server';
+export async function GET(){try{const u=await identity();const row=await db().prepare('SELECT data FROM profiles WHERE id=?').bind(u.userId).first<{data:string}>();return Response.json(row?JSON.parse(row.data):{name:u.fullName||'Teammate',bio:'Making big ideas happen, one small win at a time.',emoji:'🌟'})}catch(e){return failure(e)}}
+export async function PUT(req:Request){try{const u=await identity();const p=z.object({name:z.string().trim().min(1).max(60),bio:z.string().max(300),emoji:z.string().min(1).max(12),notes:z.string().max(10000).optional()}).parse(await req.json());await db().prepare('INSERT INTO profiles(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data').bind(u.userId,JSON.stringify(p)).run();return Response.json(p)}catch(e){if(e instanceof z.ZodError)return Response.json({error:'Check your profile details.'},{status:400});return failure(e)}}
