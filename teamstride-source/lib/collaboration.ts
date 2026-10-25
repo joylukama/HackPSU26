@@ -2,8 +2,8 @@ import type {Project,Task,Identity,Activity} from './model';
 import {HttpError,admin} from './server';
 import {z} from 'zod';
 
-export function recordActivity(project:Project,user:Identity,kind:Activity['kind'],text:string,taskId?:string){
-  project.activities=[...(project.activities||[]),{id:crypto.randomUUID(),kind,actorUserId:user.userId,actorName:user.displayName,text,taskId,at:new Date().toISOString()}].slice(-250);
+export function recordActivity(project:Project,user:Identity,kind:Activity['kind'],text:string,taskId?:string,extra:{meetingId?:string;recipientMemberIds?:string[]}={}){
+  project.activities=[...(project.activities||[]),{id:crypto.randomUUID(),kind,actorUserId:user.userId,actorName:user.displayName,text,taskId,at:new Date().toISOString(),...extra}].slice(-250);
 }
 const owned=(task:Task,project:Project,user:Identity)=>project.members.some(member=>member.status==='active'&&(member.userId===user.userId||member.email===user.email)&&task.assignees.includes(member.id));
 export function applyCollaboration(project:Project,user:Identity,body:Record<string,unknown>){

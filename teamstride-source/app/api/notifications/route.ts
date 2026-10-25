@@ -1,21 +1,27 @@
 import {z} from 'zod';
 import {identity,db,activeMember,failure,HttpError} from '../../../lib/server';
-import {projectSchedule,dayKey,type Project} from '../../../lib/model';
+import {projectSchedule,dayKey,reminderIsDue,type Project,type TaskReminder} from '../../../lib/model';
 
 export async function GET(){
   try{
     const user=await identity();
     const rows=await db().prepare('SELECT data FROM projects ORDER BY rowid DESC').all<{data:string}>();
     const profile=await db().prepare('SELECT data FROM profiles WHERE id=?').bind(user.userId).first<{data:string}>();
-    const read=new Set<string>(profile?JSON.parse(profile.data).notificationReads||[]:[]);
-    const items: {id:string;projectId:string;projectTitle:string;taskId?:string;text:string;kind:string;at:string;read:boolean}[]=[];
+    const savedProfile=profile?JSON.parse(profile.data):{};const read=new Set<string>(savedProfile.notificationReads||[]);const reminders:TaskReminder[]=savedProfile.taskReminders||[];
+    const items: {id:string;projectId:string;projectTitle:string;taskId?:string;meetingId?:string;text:string;kind:string;at:string;read:boolean}[]=[];
     for(const row of rows.results){
       const project=JSON.parse(row.data) as Project;
       if(project.deletedAt||!project.creatorId||!activeMember(project,user))continue;
+      const mine=project.members.find(member=>member.userId===user.userId||member.email===user.email);
       for(const event of project.activities||[]){
-        if(event.actorUserId===user.userId)continue;
+        if(event.actorUserId===user.userId||event.recipientMemberIds&&(!mine||!event.recipientMemberIds.includes(mine.id)))continue;
         const id=`event:${project.id}:${event.id}`;
-        items.push({id,projectId:project.id,projectTitle:project.title,taskId:event.taskId,text:event.text,kind:event.kind,at:event.at,read:read.has(id)});
+        items.push({id,projectId:project.id,projectTitle:project.title,taskId:event.taskId,meetingId:event.meetingId,text:event.text,kind:event.kind,at:event.at,read:read.has(id)});
+      }
+      if(project.status==='active')for(const reminder of reminders.filter(reminder=>reminder.projectId===project.id)){
+       const task=project.tasks.find(task=>task.id===reminder.taskId);if(!task||!reminderIsDue(task,reminder))continue;
+       const id=`reminder:${project.id}:${task.id}:${task.date}:${reminder.daysBefore}:${reminder.time}:${reminder.timeZone}`;
+       items.push({id,projectId:project.id,projectTitle:project.title,taskId:task.id,text:`Your reminder: “${task.title}” is due ${task.date}.`,kind:'reminder',at:new Date().toISOString(),read:read.has(id)});
       }
       const schedule=projectSchedule(project);
       for(const task of schedule.overdue){

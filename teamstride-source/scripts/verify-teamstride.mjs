@@ -144,3 +144,43 @@ current=owner;let edited=await call('PATCH',{id:fileProject.id,action:'task',tas
 const withoutEstimate={...edited.tasks[0]};delete withoutEstimate.estimatedMinutes;edited=await call('PATCH',{id:fileProject.id,action:'task',task:withoutEstimate});assert.equal(edited.tasks[0].estimatedMinutes,150);
 await call('PATCH',{id:fileProject.id,action:'task',task:{...edited.tasks[0],estimatedMinutes:0}},400);
 console.log('PASS: task estimates on creation and editing, joined-team file sharing, general/task attachments, safe downloads, upload validation, conflict cleanup, creator-only deletion and restoration, and retained materials after restore.');
+
+// Team meetings target invitation notifications and authorize responses.
+current=owner;const calendarTeam=await call('POST',{...data,title:'Calendar and chat team'});
+current=member;await call('PATCH',{id:calendarTeam.id,action:'accept'});
+const meetingsRoute=await moduleFor('app/api/meetings/route.ts');await meetingsRoute.evaluate();
+const meetingDraft={projectId:calendarTeam.id,title:'Project check-in',startAt:'2030-10-25T14:00:00.000Z',endAt:'2030-10-25T15:00:00.000Z',timeZone:'America/New_York',inviteeIds:['a','b'],location:'Team room',joinUrl:'https://example.test/meeting',notes:'Discuss next steps.'};
+current=outsider;r=await meetingsRoute.namespace.POST(req(meetingDraft));assert.equal(r.status,403);
+current=owner;r=await meetingsRoute.namespace.POST(req({...meetingDraft,inviteeIds:['not-a-member']}));assert.equal(r.status,400);
+r=await meetingsRoute.namespace.POST(req(meetingDraft));assert.equal(r.status,200);const meeting=(await r.json()).meeting;assert.equal(meeting.responses.a,'accepted');assert.equal(meeting.responses.b,'pending');
+current=member;r=await notificationRoute.namespace.GET();assert.ok((await r.json()).items.some(item=>item.meetingId===meeting.id&&item.kind==='meeting'));
+r=await meetingsRoute.namespace.PATCH(req({projectId:calendarTeam.id,meetingId:meeting.id,action:'accept'}));assert.equal(r.status,200);assert.equal((await r.json()).meeting.responses.b,'accepted');
+r=await meetingsRoute.namespace.PATCH(req({projectId:calendarTeam.id,meetingId:meeting.id,action:'cancel'}));assert.equal(r.status,403);
+current=owner;r=await meetingsRoute.namespace.PATCH(req({projectId:calendarTeam.id,meetingId:meeting.id,action:'cancel'}));assert.equal(r.status,200);assert.equal((await r.json()).meeting.status,'cancelled');
+// Personal reminders are private and follow deadline changes rather than fixed dates.
+const remindersRoute=await moduleFor('app/api/reminders/route.ts');await remindersRoute.evaluate();
+const reminderValue={projectId:calendarTeam.id,taskId:'t1',daysBefore:365,time:'00:00',timeZone:'America/New_York'};
+current=outsider;r=await remindersRoute.namespace.PUT(req(reminderValue));assert.equal(r.status,403);
+current=owner;r=await remindersRoute.namespace.PUT(req(reminderValue));assert.equal(r.status,200);
+r=await notificationRoute.namespace.GET();let personalReminder=(await r.json()).items.find(item=>item.projectId===calendarTeam.id&&item.kind==='reminder');assert.ok(personalReminder);
+current=member;r=await remindersRoute.namespace.GET();assert.ok(!(await r.json()).reminders.some(item=>item.projectId===calendarTeam.id));r=await notificationRoute.namespace.GET();assert.ok(!(await r.json()).items.some(item=>item.projectId===calendarTeam.id&&item.kind==='reminder'));
+current=owner;r=await profiles.namespace.PATCH(req({notes:'Notes must survive reminder saves'}));assert.equal(r.status,200);r=await profiles.namespace.PUT(req({name:'Owner',bio:'Builder',emoji:'🌟'}));assert.equal(r.status,200);r=await remindersRoute.namespace.GET();assert.ok((await r.json()).reminders.some(item=>item.projectId===calendarTeam.id));
+const twoDays={...reminderValue,daysBefore:2,time:'09:00'};
+assert.equal(models.reminderIsDue(data.tasks[0],twoDays,new Date('2026-10-25T12:59:00Z')),false);assert.equal(models.reminderIsDue(data.tasks[0],twoDays,new Date('2026-10-25T13:00:00Z')),true);assert.equal(models.reminderIsDue({...data.tasks[0],date:'2026-10-29'},twoDays,new Date('2026-10-25T13:00:00Z')),false);
+await call('PATCH',{id:calendarTeam.id,action:'toggle',taskId:'t1',done:true});r=await notificationRoute.namespace.GET();assert.ok(!(await r.json()).items.some(item=>item.projectId===calendarTeam.id&&item.kind==='reminder'));
+current=member;r=await notificationRoute.namespace.GET();assert.ok((await r.json()).items.some(item=>item.projectId===calendarTeam.id&&item.kind==='completed'));
+current=owner;r=await remindersRoute.namespace.DELETE(req(reminderValue));assert.equal(r.status,200);
+// The shared chat saves real team history without an API call or assistant impersonation.
+const chatRoute=await moduleFor('app/api/project-chat/route.ts');await chatRoute.evaluate();
+const chatGet=before=>new Request('https://example.test/api/project-chat?projectId='+calendarTeam.id+(before?'&before='+before:''));
+current=outsider;r=await chatRoute.namespace.GET(chatGet());assert.equal(r.status,403);
+current=owner;const chatDraft={projectId:calendarTeam.id,id:crypto.randomUUID(),text:'How should we approach this project?',role:'assistant'};const previousAI=aiRequest;
+r=await chatRoute.namespace.POST(req(chatDraft));assert.equal(r.status,200);const chatResponse=await r.json();assert.equal(chatResponse.message.role,'user');assert.equal(chatResponse.ai.status,'not_configured');assert.equal(aiRequest,previousAI);
+r=await chatRoute.namespace.POST(req(chatDraft));assert.equal(r.status,200);assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM project_messages WHERE id=?').get(chatDraft.id).n,1);
+current=member;r=await chatRoute.namespace.GET(chatGet());let sharedMessages=(await r.json()).messages;assert.equal(sharedMessages[0].body,chatDraft.text);assert.equal(sharedMessages[0].authorName,owner.displayName);
+r=await chatRoute.namespace.POST(req({projectId:calendarTeam.id,id:crypto.randomUUID(),text:'I can research the first topic.'}));assert.equal(r.status,200);
+current=owner;r=await chatRoute.namespace.GET(chatGet());assert.equal((await r.json()).messages.length,2);
+for(let i=0;i<52;i++)sqlite.prepare('INSERT INTO project_messages(id,project_id,author_user_id,author_name,role,body,created_at) VALUES (?,?,?,?,?,?,?)').run(crypto.randomUUID(),calendarTeam.id,owner.userId,'Owner','user','History '+i,new Date().toISOString());
+r=await chatRoute.namespace.GET(chatGet());const latestPage=await r.json();assert.equal(latestPage.messages.length,50);assert.ok(latestPage.nextBefore);r=await chatRoute.namespace.GET(chatGet(latestPage.nextBefore));assert.equal((await r.json()).messages.length,4);
+r=await routes.namespace.DELETE(deleteReq(calendarTeam.id));assert.equal(r.status,200);r=await chatRoute.namespace.GET(chatGet());assert.equal(r.status,404);await call('PATCH',{id:calendarTeam.id,action:'restore'});r=await chatRoute.namespace.GET(chatGet());assert.equal((await r.json()).messages.length,50);
+console.log('PASS: meeting creation/invitations/RSVP/cancellation, targeted meeting notifications, private deadline-relative reminders, completion notifications for other teammates, shared chat authorization/history/pagination/idempotency, and chat retention after delete/restore without any AI provider.');

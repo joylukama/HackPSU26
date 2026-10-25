@@ -13,7 +13,7 @@ export async function PUT(req:Request){
     const user=await identity();
     const profile=z.object({name:z.string().trim().min(1).max(60),bio:z.string().max(300),emoji:z.string().min(1).max(12),notes:z.string().max(10000).optional()}).parse(await req.json());
     // Profile edits preserve notes already saved independently by PATCH.
-    await db().prepare("INSERT INTO profiles(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.notes', COALESCE(json_extract(profiles.data, '$.notes'),json_extract(excluded.data, '$.notes'),''), '$.notificationReads', json(COALESCE(json_extract(profiles.data, '$.notificationReads'),'[]')))").bind(user.userId,JSON.stringify(profile)).run();
+    await db().prepare("INSERT INTO profiles(id,data) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.notes', COALESCE(json_extract(profiles.data, '$.notes'),json_extract(excluded.data, '$.notes'),''), '$.notificationReads', json(COALESCE(json_extract(profiles.data, '$.notificationReads'),'[]')), '$.taskReminders', json(COALESCE(json_extract(profiles.data, '$.taskReminders'),'[]')))").bind(user.userId,JSON.stringify(profile)).run();
     return GET();
   }catch(error){
     if(error instanceof z.ZodError)return Response.json({error:'Check your profile details.'},{status:400});

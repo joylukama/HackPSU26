@@ -1,9 +1,9 @@
 export type Member={id:string;name:string;email:string;userId?:string;status:'active'|'pending'};
 export type Comment={id:string;author:string;text:string;at:string};
 export type Task={id:string;title:string;detail:string;assignees:string[];phase:number;date:string;done:boolean;comments:Comment[];estimatedMinutes?:number;help?:{byUserId:string;byName:string;message:string;at:string}};
-export type Project={id:string;title:string;brief:string;members:Member[];start:string;end:string;tasks:Task[];creatorId:string;creatorEmail:string;theme:string;emoji:string;status:'active'|'completed';revision:number;reopened?:boolean;activities?:Activity[];swaps?:TaskSwap[];materials?:ProjectMaterial[];deletedAt?:string;deletedBy?:string};
+export type Project={id:string;title:string;brief:string;members:Member[];start:string;end:string;tasks:Task[];creatorId:string;creatorEmail:string;theme:string;emoji:string;status:'active'|'completed';revision:number;reopened?:boolean;activities?:Activity[];swaps?:TaskSwap[];materials?:ProjectMaterial[];deletedAt?:string;deletedBy?:string;meetings?:ProjectMeeting[]};
 export type ProjectMaterial={id:string;key:string;name:string;size:number;mime:string;taskId?:string;uploadedBy:string;uploadedByName:string;uploadedAt:string};
-export type Activity={id:string;kind:'completed'|'help'|'swap'|'schedule'|'material';actorUserId:string;actorName:string;text:string;taskId?:string;at:string};
+export type Activity={id:string;kind:'completed'|'help'|'swap'|'schedule'|'material'|'meeting';actorUserId:string;actorName:string;text:string;taskId?:string;at:string;meetingId?:string;recipientMemberIds?:string[]};
 export type TaskSwap={id:string;fromTaskId:string;toTaskId:string;fromMemberId:string;toMemberId:string;requestedBy:string;status:'pending'|'accepted'|'declined'|'cancelled';createdAt:string};
 export type Profile={name:string;bio:string;emoji:string;notes?:string};
 export type Identity={userId:string;email:string;displayName:string};
@@ -116,3 +116,10 @@ export function estimateTaskMinutes(task:{title:string;detail?:string;phase?:num
  return [45,90,60,45][task.phase??0]||60;
 }
 export function formatEstimate(minutes:number){const hours=Math.floor(minutes/60),rest=minutes%60;return hours?`${hours}h${rest?` ${rest}m`:''}`:`${minutes}m`}
+
+export type ProjectMeeting={id:string;title:string;startAt:string;endAt:string;timeZone:string;organizerId:string;organizerName:string;inviteeIds:string[];responses:Record<string,'pending'|'accepted'|'declined'>;location:string;joinUrl:string;notes:string;status:'scheduled'|'cancelled'};
+export type TaskReminder={projectId:string;taskId:string;daysBefore:number;time:string;timeZone:string};
+export function reminderIsDue(task:Task,reminder:TaskReminder,now=new Date()){
+ if(task.done)return false;
+ try{const parts=new Intl.DateTimeFormat('en-CA',{timeZone:reminder.timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(now);const value=(type:string)=>parts.find(part=>part.type===type)?.value||'';const date=`${value('year')}-${value('month')}-${value('day')}`;const time=`${value('hour')}:${value('minute')}`;const target=addDays(task.date,-reminder.daysBefore);return date>target||date===target&&time>=reminder.time}catch{return false}
+}
