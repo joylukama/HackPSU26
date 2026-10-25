@@ -9,7 +9,7 @@ export async function GET(request:Request){
   const url=new URL(request.url);const projectId=z.string().min(1).max(100).parse(url.searchParams.get('projectId'));await access(projectId);
   const before=url.searchParams.get('before');const limit=before?z.coerce.number().int().positive().safe().parse(before):Number.MAX_SAFE_INTEGER;
   const rows=await db().prepare(`SELECT ${columns} FROM project_messages WHERE project_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51`).bind(projectId,limit).all<ProjectChatMessage>();
-  const messages=rows.results.slice(0,50);return Response.json({messages:messages.reverse(),nextBefore:rows.results.length>50?messages[0].sequence:null,ai:projectChatAI},{headers:{'Cache-Control':'private, no-store'}});
+  const messages=rows.results.slice(0,50);return Response.json({messages:messages.reverse(),nextBefore:rows.results.length>50?messages[0].sequence:null,ai:projectChatAI,aiEnabled:(await load(projectId)).project.aiEnabled!==false},{headers:{'Cache-Control':'private, no-store'}});
  }catch(error){if(error instanceof z.ZodError)return Response.json({error:'Choose a valid project or history page.'},{status:400});return failure(error)}
 }
 export async function POST(request:Request){

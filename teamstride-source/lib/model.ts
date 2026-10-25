@@ -1,9 +1,9 @@
-export type Member={id:string;name:string;email:string;userId?:string;status:'active'|'pending'};
+export type Member={id:string;name:string;email:string;userId?:string;status:'active'|'pending'|'left'};
 export type Comment={id:string;author:string;text:string;at:string};
-export type Task={id:string;title:string;detail:string;assignees:string[];phase:number;date:string;done:boolean;comments:Comment[];estimatedMinutes?:number;help?:{byUserId:string;byName:string;message:string;at:string}};
+export type Task={assignmentFile?:string;assignmentRequirement?:string;id:string;title:string;detail:string;assignees:string[];phase:number;date:string;done:boolean;comments:Comment[];estimatedMinutes?:number;help?:{byUserId:string;byName:string;message:string;at:string}};
 export type Project={aiEnabled?:boolean;inviteCode?:string;id:string;title:string;brief:string;members:Member[];start:string;end:string;tasks:Task[];creatorId:string;creatorEmail:string;theme:string;emoji:string;status:'active'|'completed';revision:number;reopened?:boolean;activities?:Activity[];swaps?:TaskSwap[];materials?:ProjectMaterial[];deletedAt?:string;deletedBy?:string;meetings?:ProjectMeeting[]};
-export type ProjectMaterial={id:string;key:string;name:string;size:number;mime:string;taskId?:string;uploadedBy:string;uploadedByName:string;uploadedAt:string};
-export type Activity={id:string;kind:'assignment'|'completed'|'help'|'swap'|'schedule'|'material'|'meeting';actorUserId:string;actorName:string;text:string;taskId?:string;at:string;meetingId?:string;recipientMemberIds?:string[]};
+export type ProjectMaterial={planningTaskCount?:number;planningStatus?:string;id:string;key:string;name:string;size:number;mime:string;taskId?:string;uploadedBy:string;uploadedByName:string;uploadedAt:string};
+export type Activity={id:string;kind:'membership'|'assignment'|'completed'|'help'|'swap'|'schedule'|'material'|'meeting';actorUserId:string;actorName:string;text:string;taskId?:string;at:string;meetingId?:string;recipientMemberIds?:string[]};
 export type TaskSwap={id:string;fromTaskId:string;toTaskId:string;fromMemberId:string;toMemberId:string;requestedBy:string;status:'pending'|'accepted'|'declined'|'cancelled';createdAt:string};
 export type Profile={name:string;bio:string;emoji:string;notes?:string};
 export type Identity={userId:string;email:string;displayName:string};

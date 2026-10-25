@@ -11,3 +11,14 @@ export const projectMessages = sqliteTable("project_messages", {
   body: text("body").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const coachMessages = sqliteTable("coach_messages", {
+  id: text("id").primaryKey(),
+  projectId: text("project_id").notNull(),
+  memberId: text("member_id").notNull(),
+  authorUserId: text("author_user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  role: text("role").notNull(),
+  body: text("body").notNull(),
+  createdAt: text("created_at").notNull(),
+});

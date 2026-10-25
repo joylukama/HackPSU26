@@ -18,8 +18,8 @@ export async function PUT(request:Request){try{
  const {project,raw}=await load(found.id);if(!project.inviteCode||normalizeInviteCode(project.inviteCode)!==normalized)throw new HttpError(404,'This invite code is invalid or no longer available.');
  if(activeMember(project,user))return Response.json(project,{headers:{'Cache-Control':'private, no-store'}});
  const beforeAssignments=assignmentSnapshot(project);
- const invited=project.members.find(m=>m.email===user.email&&m.status==='pending');
- if(invited){invited.status='active';invited.userId=user.userId}else{if(project.members.length>=30)throw new HttpError(400,'This project already has 30 members. Ask the creator for an email invitation to an existing team slot.');project.members.push({id:crypto.randomUUID(),name:user.displayName.slice(0,60),email:user.email,userId:user.userId,status:'active'})}
+ const invited=project.members.find(m=>m.email===user.email&&(m.status==='pending'||m.status==='left'))||(project.status==='active'?project.members.find(m=>m.status==='pending'&&!m.email):undefined);
+ if(invited){invited.status='active';invited.userId=user.userId;invited.email=user.email;invited.name=user.displayName.slice(0,60)}else{if(project.members.filter(member=>member.status!=='left').length>=30)throw new HttpError(400,'This project already has 30 members. Ask the project admin to review the team.');project.members.push({id:crypto.randomUUID(),name:user.displayName.slice(0,60),email:user.email,userId:user.userId,status:'active'})}
  redistributeTasks(project);notifyAssignments(project,user,beforeAssignments);
  return Response.json(await save(project,raw),{headers:{'Cache-Control':'private, no-store'}});
 }catch(error){if(error instanceof z.ZodError)return Response.json({error:'Enter a valid invite code.'},{status:400});return failure(error)}}

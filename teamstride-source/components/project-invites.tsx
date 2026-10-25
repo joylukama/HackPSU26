@@ -9,7 +9,7 @@ export function JoinProjectCode({user,onJoined}:{user:Identity|null;onJoined:(pr
 }
 export function ProjectInviteCode({project,isAdmin,onProject}:{project:Project;isAdmin:boolean;onProject:(project:Project)=>void}){
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState('');
- async function change(disable=false){setBusy(true);setNotice('');try{onProject(await request('POST',{projectId:project.id,disable}));setNotice(disable?'Code disabled. Email and link invitations still work.':'New code ready. Previous codes no longer work.')}catch(error){setNotice((error as Error).message)}finally{setBusy(false)}}
+ async function change(disable=false){setBusy(true);setNotice('');try{onProject(await request('POST',{projectId:project.id,disable}));setNotice(disable?'Code disabled. Links containing this code can no longer be used to join.':'New code ready. Previous codes no longer work.')}catch(error){setNotice((error as Error).message)}finally{setBusy(false)}}
  return <section className="panel inviteCodePanel"><h3>Project invite code</h3><p>Anyone signed in with this code can join your project. Share it only with your teammates.</p>{project.inviteCode?<><code className="projectInviteCode">{project.inviteCode}</code><button className="secondary" onClick={async()=>{try{await navigator.clipboard.writeText(project.inviteCode!);setNotice('Code copied.')}catch{setNotice('Select and copy the code above.')}}}>Copy code</button></>:<p>No active code.</p>}{isAdmin&&<div><button className="textbutton" disabled={busy} onClick={()=>change()}>{project.inviteCode?'Replace code':'Create code'}</button>{project.inviteCode&&<button className="textbutton" disabled={busy} onClick={()=>change(true)}>Disable code</button>}</div>}<p role="status">{notice}</p></section>;
 }
 

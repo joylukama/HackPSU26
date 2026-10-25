@@ -11,7 +11,7 @@ export async function POST(request:Request){
   if(project.status==='completed')throw new HttpError(400,'Reopen the project before scheduling a new meeting.');
   const start=Date.parse(body.startAt),end=Date.parse(body.endAt);
   if(start<Date.now()-60000||end<=start||end-start>86400000)throw new HttpError(400,'Choose a future start time and an end time within 24 hours of the start.');
-  if(body.inviteeIds.some(id=>!project.members.some(member=>member.id===id)))throw new HttpError(400,'Invite only members of this project.');
+  if(body.inviteeIds.some(id=>!project.members.some(member=>member.id===id&&member.status!=='left')))throw new HttpError(400,'Invite only members of this project.');
   if((project.meetings||[]).length>=200)throw new HttpError(400,'This project has reached its 200-meeting limit.');
   const mine=project.members.find(member=>member.userId===user.userId||member.email===user.email);
   const inviteeIds=Array.from(new Set([...body.inviteeIds,...(mine?[mine.id]:[])]));

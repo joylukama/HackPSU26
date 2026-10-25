@@ -1,3 +1,5 @@
+import {assignmentTasks} from '../../../lib/assignment-plan';
+import {assignmentSnapshot,notifyAssignments} from '../../../lib/task-assignments';
 import {env} from 'cloudflare:workers';
 import {z} from 'zod';
 import {identity,load,save,activeMember,admin,failure,HttpError} from '../../../lib/server';
@@ -12,6 +14,7 @@ async function boundedFormData(request:Request){
   const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
   return new Response(bytes,{headers:{'Content-Type':request.headers.get('content-type')||''}}).formData();
 }
+function planningStart(project:Project){const today=new Date().toISOString().slice(0,10);return today>project.end?project.end:today>project.start?today:project.start}
 function bucket(){if(!env.BUCKET)throw new HttpError(503,'Project file storage is unavailable. Please try again later.');return env.BUCKET}
 function authorize(project:Project,user:Identity){if(!activeMember(project,user))throw new HttpError(403,'Join this project to access its materials.')}
 function checkTask(project:Project,taskId?:string){if(taskId&&!project.tasks.some(task=>task.id===taskId))throw new HttpError(400,'Choose a task in this project.')}
@@ -45,8 +48,14 @@ export async function POST(request:Request){
     if(!file||typeof file==='string'||typeof file.arrayBuffer!=='function')throw new HttpError(400,'Choose a file to upload.');
     if(file.size===0||file.size>MAX_BYTES)throw new HttpError(413,'Choose a non-empty file of 10 MB or smaller.');
     const taskId=z.string().max(100).parse(form.get('taskId')||'')||undefined;checkTask(project,taskId);
+    const assignmentText=z.string().max(20000).parse(form.get('assignmentText')||'').trim();
+    const beforeAssignments=assignmentSnapshot(project);
     const fileId=crypto.randomUUID();const key=`projects/${project.id}/${fileId}`;
     const material={id:fileId,key,name:file.name.replace(/[\u0000-\u001f\u007f/\\]/g,'_').slice(0,200)||'Project material',size:file.size,mime:file.type||'application/octet-stream',taskId,uploadedBy:user.userId,uploadedByName:user.displayName,uploadedAt:new Date().toISOString()};
+    const additions=assignmentText?assignmentTasks(project.title,project.members,planningStart(project),project.end,[{fileName:file.name.slice(0,200),text:assignmentText}],project.tasks):[];
+    if(project.tasks.length+additions.length>200)throw new HttpError(400,'These assignment requirements would exceed the 200-task limit. Upload as reference material or reduce the task list first.');
+    Object.assign(material,{planningStatus:assignmentText?(additions.length?'used':'no_new_requirements'):'reference',planningTaskCount:additions.length});
+    project.tasks.push(...additions);notifyAssignments(project,user,beforeAssignments);
     const storage=bucket();await storage.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:'application/octet-stream'}});
     project.materials=[...(project.materials||[]),material];recordActivity(project,user,'material',`${user.displayName} shared “${material.name}”.`,taskId);
     try{return Response.json({project:await save(project,raw),material})}
@@ -55,10 +64,11 @@ export async function POST(request:Request){
 }
 export async function PATCH(request:Request){
   try{
-    const user=await identity();const body=z.object({projectId:z.string().min(1).max(100),fileId:z.string().min(1).max(100),taskId:z.string().max(100).optional()}).parse(await request.json());
+    const user=await identity();const body=z.object({projectId:z.string().min(1).max(100),fileId:z.string().min(1).max(100),taskId:z.string().max(100).optional(),assignmentText:z.string().trim().min(12).max(20000).optional()}).parse(await request.json());
     const {project,raw}=await load(body.projectId);authorize(project,user);
     if(project.status==='completed')throw new HttpError(400,'Reopen the project before changing materials.');
     const material=project.materials?.find(file=>file.id===body.fileId);if(!material)throw new HttpError(404,'Material not found.');
+    if(body.assignmentText){const before=assignmentSnapshot(project);const additions=assignmentTasks(project.title,project.members,planningStart(project),project.end,[{fileName:material.name,text:body.assignmentText}],project.tasks);if(project.tasks.length+additions.length>200)throw new HttpError(400,'These requirements would exceed the 200-task limit.');project.tasks.push(...additions);material.planningTaskCount=(material.planningTaskCount||0)+additions.length;material.planningStatus=material.planningTaskCount?'used':'no_new_requirements';notifyAssignments(project,user,before);if(additions.length)recordActivity(project,user,'material',`${user.displayName} added ${additions.length} requirement tasks from “${material.name}”.`);return Response.json({project:await save(project,raw),added:additions.length})}
     if(material.uploadedBy!==user.userId&&!admin(project,user))throw new HttpError(403,'Only the uploader or project creator can reassign this material.');
     checkTask(project,body.taskId||undefined);material.taskId=body.taskId||undefined;
     return Response.json({project:await save(project,raw)});

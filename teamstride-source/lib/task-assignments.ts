@@ -6,7 +6,7 @@ export const assignmentSnapshot=(project:Project)=>project.tasks.map(task=>({...
 // Ties use estimated effort. Shared work, completed work, and task contents stay intact.
 export function redistributeTasks(project:Project){
  if(project.status!=='active'||project.members.length<2)return;
- const members=project.members,solo=project.tasks.filter(task=>!task.done&&task.assignees.length===1);
+ const members=project.members.filter(member=>member.status!=='left');if(members.length<2)return;const solo=project.tasks.filter(task=>!task.done&&task.assignees.length===1);
  const count=(id:string)=>solo.filter(task=>task.assignees[0]===id).length;
  const effort=(id:string)=>project.tasks.filter(task=>!task.done&&task.assignees.includes(id)).reduce((sum,task)=>sum+(task.estimatedMinutes??estimateTaskMinutes(task))/task.assignees.length,0);
  for(let step=0;step<solo.length*members.length;step++){
