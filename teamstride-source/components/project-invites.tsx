@@ -1,6 +1,6 @@
 'use client';
-import {useState} from 'react';
-import {Plus,X} from 'lucide-react';
+import {useState,useEffect,useRef} from 'react';
+import {Plus,X,Copy,Check} from 'lucide-react';
 import type {Project,Identity} from '../lib/model';
 async function request(method:string,body:unknown){const response=await fetch('/api/invite-codes',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data=await response.json() as Project & {error?:string};if(!response.ok)throw Error(data.error||'Could not update invitation.');return data as Project}
 export function JoinProjectCode({user,onJoined}:{user:Identity|null;onJoined:(project:Project)=>void}){
@@ -16,4 +16,16 @@ export function ProjectInviteCode({project,isAdmin,onProject}:{project:Project;i
 export function NewProjectMenu({user,onCreate,onJoined}:{user:Identity|null;onCreate:()=>void;onJoined:(project:Project)=>void}){
  const [open,setOpen]=useState(false),[joining,setJoining]=useState(false);
  return <div className="newProjectMenu"><button className="primary" onClick={()=>{setJoining(false);setOpen(true)}}><Plus size={17}/> New Project</button>{open&&<div className="overlay" onClick={()=>setOpen(false)}><section className="dialog" role="dialog" aria-modal="true" aria-label="Create or join a project" onClick={event=>event.stopPropagation()}><button className="close" aria-label="Close project menu" onClick={()=>setOpen(false)}><X size={20}/></button><span className="eyebrow">YOUR NEXT GOOD THING</span><h2>{joining?'Join a project':'Start something together'}</h2>{joining?<><JoinProjectCode user={user} onJoined={project=>{setOpen(false);onJoined(project)}}/><button className="textbutton" onClick={()=>setJoining(false)}>Back to project options</button></>:<div className="projectMenuOptions"><button className="secondary" onClick={()=>{setOpen(false);onCreate()}}>Create project</button><button className="secondary" onClick={()=>setJoining(true)}>Join project</button></div>}</section></div>}</div>;
+}
+
+export function CopyProjectLink({project}:{project:Project}){
+ const [status,setStatus]=useState<'idle'|'copying'|'copied'|'manual'|'unavailable'>('idle');
+ const [link,setLink]=useState('');const input=useRef<HTMLInputElement>(null);
+ useEffect(()=>{if(status==='manual'){input.current?.focus();input.current?.select()}},[status]);
+ async function copy(){
+  if(!project.inviteCode){setStatus('unavailable');return}
+  const local=['localhost','127.0.0.1','[::1]'].includes(window.location.hostname);const url=new URL('/',local?window.location.origin:'https://www.teamstride.work');url.searchParams.set('project',project.id);url.searchParams.set('join',project.inviteCode);setLink(url.toString());setStatus('copying');
+  try{await navigator.clipboard.writeText(url.toString());setStatus('copied')}catch{setStatus('manual')}
+ }
+ return <div className="copyProjectLink"><button type="button" aria-live="polite" disabled={status==='copying'} onClick={copy}>{status==='copied'?<Check size={13}/>:<Copy size={13}/>} {status==='copied'?'link copied!':status==='copying'?'Copying…':'Copy invite link'}</button><span className="copyLinkStatus" role="status" aria-live="polite">{status==='manual'?'Automatic copying was blocked. Copy the selected invite link below.':status==='unavailable'?'Ask the project admin to create an invite code first.':''}</span>{status==='manual'&&<input ref={input} aria-label="Project invite link to copy" readOnly value={link} onFocus={event=>event.target.select()}/>}</div>;
 }

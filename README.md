@@ -89,11 +89,11 @@ Local environment files, dependencies, generated builds, and runtime files are e
 
 ## AI task coaches
 
-Task coaches use the OpenAI Responses API with the selected teammate’s assignments and the current conversation. Configure the server locally by creating `teamstride-source/.dev.vars`:
+Task coaches and `@AI` mentions in Project Chat use the Anthropic Messages API. Replies use saved conversation history, project context, and the authenticated sender’s identity. Project Chat replies are saved for all project members; ordinary team messages do not call Claude. Project AI permissions apply to both features. Configure the server locally by creating `teamstride-source/.dev.vars`:
 
 ```dotenv
-OPENAI_API_KEY=your-api-key
-OPENAI_MODEL=gpt-4.1-mini
+ANTHROPIC_API_KEY=your-api-key
+ANTHROPIC_MODEL=claude-haiku-4-5
 ```
 
 Restart `npm run dev` after adding the key. Never commit `.dev.vars` or expose the key through a `NEXT_PUBLIC_` variable. For a hosted deployment, configure the same values as server environment variables/secrets. Without a key, the coach shows a configuration message instead of a scripted reply. Private brain-dump notes and teammate email addresses are not included in coach context.

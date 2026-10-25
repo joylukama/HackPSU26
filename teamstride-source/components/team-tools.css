@@ -58,3 +58,8 @@ html[data-theme='dark'] .stat>span{background:var(--studio-soft);color:#d7c394}h
  .notificationPanel .notificationItems{min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
  .notificationPanel .iconbtn{min-width:44px;min-height:44px;flex-shrink:0}
 }
+
+.copyProjectLink{display:flex;flex-direction:column;align-items:flex-start;max-width:100%;gap:5px}
+.copyLinkStatus{font-size:11px;line-height:1.5;color:var(--accent);max-width:280px}
+.copyLinkStatus:empty{display:none}
+.copyProjectLink input{width:100%;max-width:340px;min-width:0;font-size:16px;padding:10px;border:1px solid var(--studio-line);border-radius:7px;background:var(--studio-surface);color:var(--studio-ink)}

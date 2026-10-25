@@ -10,11 +10,11 @@ export async function POST(request:Request){try{
  project.inviteCode=body.disable?undefined:await newInviteCode();return Response.json(await save(project,raw),{headers:{'Cache-Control':'private, no-store'}});
 }catch(error){if(error instanceof z.ZodError)return Response.json({error:'Choose a valid project.'},{status:400});return failure(error)}}
 export async function PUT(request:Request){try{
- const user=await identity();const {code}=z.object({code:z.string().trim().min(1).max(12)}).parse(await request.json());const normalized=normalizeInviteCode(code);
+ const user=await identity();const {code,projectId}=z.object({code:z.string().trim().min(1).max(12),projectId:z.string().min(1).max(100).optional()}).parse(await request.json());const normalized=normalizeInviteCode(code);
  if(!/^[A-Z2-9]{6}$/.test(normalized))throw new HttpError(404,'This invite code is invalid or no longer available.');
  const rows=await db().prepare('SELECT data FROM projects ORDER BY rowid DESC').all<{data:string}>();
  const found=rows.results.map(row=>JSON.parse(row.data) as Project).find(p=>!p.deletedAt&&p.inviteCode&&normalizeInviteCode(p.inviteCode)===normalized);
- if(!found)throw new HttpError(404,'This invite code is invalid or no longer available.');
+ if(!found||(projectId&&found.id!==projectId))throw new HttpError(404,'This invite code is invalid or no longer available.');
  const {project,raw}=await load(found.id);if(!project.inviteCode||normalizeInviteCode(project.inviteCode)!==normalized)throw new HttpError(404,'This invite code is invalid or no longer available.');
  if(activeMember(project,user))return Response.json(project,{headers:{'Cache-Control':'private, no-store'}});
  const beforeAssignments=assignmentSnapshot(project);
