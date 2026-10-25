@@ -41,3 +41,20 @@ html[data-theme='dark'] .stat>span{background:var(--studio-soft);color:#d7c394}h
 .brandmark.teamstrideMark{width:38px;height:40px;border-radius:13px;transform:none;background:linear-gradient(145deg,#f0e8ff,#e2d5f6);color:#7954b5;flex-shrink:0;border:1px solid #d3c2eb;box-shadow:0 3px 8px #7954b51a,inset 0 1px 0 #ffffff80}.teamstrideMark svg{display:block;overflow:visible}.sidebar.collapsed .brandmark.teamstrideMark{width:38px;height:40px}
 
 .leaveProjectDialog p{line-height:1.8;color:var(--studio-muted)}.leaveProjectDialog form{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.leaveProjectDialog label{width:100%}.leaveProjectDialog .dangerButton,.leaveProjectDialog .secondary{min-height:44px;padding:12px 16px;font-size:12px}.leaveProjectDialog .dangerButton{background:#a85040;color:#fff;border-radius:8px}
+
+/* Appearance settings live outside the header stacking context, above navigation. */
+.appearanceOverlay{z-index:100;isolation:isolate;overscroll-behavior:contain;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.appearanceOverlay .appearanceDialog{width:100%;max-width:620px;max-height:calc(100dvh - 24px);overscroll-behavior:contain;min-width:0}
+.appearanceDialog fieldset{min-width:0}.appearanceDialog .appearanceModes{grid-template-columns:repeat(3,minmax(0,1fr))}.appearanceDialog .appearanceModes button{min-width:0;min-height:84px}
+.appearanceDialog>.close{min-width:44px;min-height:44px;align-items:center;justify-content:center;top:8px;right:8px}.appearanceDialog h2{padding-right:30px}
+@media(max-width:700px){.appearanceOverlay .appearanceDialog{padding:28px 18px 22px}.appearanceDialog .appearanceModes{gap:8px}.appearanceDialog .appearanceModes button{padding:18px 4px;font-size:12px}.appearanceDialog .checklabel{min-height:44px}.appearanceDialog .appearanceModes span{overflow-wrap:anywhere}}
+
+/* Keep mobile notifications above sticky navigation, with an independently scrolling list. */
+@media(max-width:700px){
+ .headerRight:has(.notificationPanel){z-index:50}
+ .notificationBackdrop{background:#30251b33}
+ .notificationPanel{top:max(76px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));max-height:calc(100dvh - 100px - env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;overflow:hidden}
+ .notificationPanel>.toolHeading,.notificationPanel>.textbutton,.notificationPanel>.hint{flex-shrink:0}
+ .notificationPanel .notificationItems{min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+ .notificationPanel .iconbtn{min-width:44px;min-height:44px;flex-shrink:0}
+}

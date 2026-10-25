@@ -1,5 +1,6 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {Bell,Flag,ArrowLeftRight,Sun,Moon,Monitor,Settings2,X,AlertTriangle,Check,Paperclip,Users} from 'lucide-react';
 import {projectSchedule,type Project,type Task,type Identity} from '../lib/model';
 import './team-tools.css';
@@ -11,7 +12,8 @@ export function NotificationCenter({items,onRead,onOpen,user}:{items:TeamNotific
   const unread=items.filter(item=>!item.read);
   return <div className="notificationCenter"><button className="utilityButton" aria-label={`Notifications${unread.length?`, ${unread.length} unread`:''}`} aria-expanded={open} onClick={()=>setOpen(!open)}><Bell size={18}/>{unread.length>0&&<b>{unread.length}</b>}</button>{open&&<><button className="notificationBackdrop" aria-label="Close notifications" onClick={()=>setOpen(false)}/><section className="notificationPanel" aria-label="Notification center"><div className="toolHeading"><div><span className="eyebrow">KEEPING YOU IN THE LOOP</span><h3>Team updates</h3></div><button className="iconbtn" aria-label="Close notification center" onClick={()=>setOpen(false)}><X size={18}/></button></div>{unread.length>0&&<button className="textbutton" onClick={()=>onRead(unread.map(item=>item.id))}>Mark all as read</button>}<div className="notificationItems">{!items.length?<div className="empty"><Bell size={24}/><h4>{user?'You’re all caught up':'Sign in for team updates'}</h4><p>Team completions, help requests, swaps, and deadline risks appear here.</p></div>:items.map(item=><article className={`notificationItem ${item.read?'':'unread'}`} key={item.id}><span>{(item.kind==='assignment'||item.kind==='membership')?<Users size={16}/>:item.kind==='completed'?<Check size={16}/>:item.kind==='risk'?<AlertTriangle size={16}/>:item.kind==='mention'?<Users size={16}/>:item.kind==='meeting'?<Users size={16}/>:item.kind==='reminder'?<Bell size={16}/>:item.kind==='help'?<Flag size={16}/>:item.kind==='material'?<Paperclip size={16}/>:<ArrowLeftRight size={16}/>}</span><div><button onClick={()=>{onOpen(item);setOpen(false);onRead([item.id])}}><small>{item.projectTitle}</small><p>{item.text}</p><time>{new Date(item.at).toLocaleString()}</time></button>{!item.read&&<button className="textbutton" onClick={()=>onRead([item.id])}>Mark read</button>}</div></article>)}</div><small className="hint">Updates refresh while this workspace is open.</small></section></>}</div>;
 }
-export function AppearanceSettings(){
+export function AppearanceSettings({accent='#7954cf',pale='#f0e8ff'}:{accent?:string;pale?:string}){
+  const triggerRef=useRef<HTMLButtonElement>(null),dialogRef=useRef<HTMLElement>(null);
   const [open,setOpen]=useState(false);
   const [mode,setMode]=useState('system');
   const [reduceMotion,setReduceMotion]=useState(false);
@@ -25,7 +27,21 @@ export function AppearanceSettings(){
     try{localStorage.setItem('teamstride-settings',JSON.stringify({mode,reduceMotion}))}catch{}
     return()=>media.removeEventListener('change',apply);
   },[mode,reduceMotion,ready]);
-  return <><button className="utilityButton" aria-label="System settings" onClick={()=>setOpen(true)}><Settings2 size={18}/></button>{open&&<div className="overlay" onClick={()=>setOpen(false)}><section className="dialog appearanceDialog" role="dialog" aria-modal="true" aria-label="System settings" onClick={event=>event.stopPropagation()}><button className="close" aria-label="Close settings" onClick={()=>setOpen(false)}><X size={20}/></button><span className="eyebrow">MAKE YOURSELF AT HOME</span><h2>System settings</h2><p>Choose how Teamstride looks on this device.</p><fieldset><legend>Appearance</legend><div className="appearanceModes">{[{value:'light',label:'Light',Icon:Sun},{value:'dark',label:'Dark',Icon:Moon},{value:'system',label:'System',Icon:Monitor}].map(({value,label,Icon})=><button key={value} className={mode===value?'selected':''} aria-pressed={mode===value} onClick={()=>setMode(value)}><Icon size={24}/><span>{label}</span></button>)}</div><p className="hint">System follows your device’s light or dark appearance.</p></fieldset><label className="checklabel"><input type="checkbox" checked={reduceMotion} onChange={event=>setReduceMotion(event.target.checked)}/> Reduce animations</label><p className="hint">Your device’s reduced-motion preference is always respected.</p></section></div>}</>;
+  useEffect(()=>{
+    if(!open)return;
+    const app=triggerRef.current?.closest<HTMLElement>('.app');const previousInert=app?.inert||false;const previousOverflow=document.body.style.overflow;
+    if(app)app.inert=true;document.body.style.overflow='hidden';
+    const first=dialogRef.current?.querySelector<HTMLButtonElement>('button');first?.focus({preventScroll:true});
+    const onKey=(event:KeyboardEvent)=>{
+      if(event.key==='Escape'){event.preventDefault();setOpen(false);return}
+      if(event.key!=='Tab')return;
+      const controls=Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]')||[]).filter(element=>element.tabIndex>=0);
+      if(!controls.length){event.preventDefault();return}const first=controls[0],last=controls[controls.length-1];if(event.shiftKey&&(document.activeElement===first||!dialogRef.current?.contains(document.activeElement))){event.preventDefault();last.focus()}else if(!event.shiftKey&&(document.activeElement===last||!dialogRef.current?.contains(document.activeElement))){event.preventDefault();first.focus()}
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>{window.removeEventListener('keydown',onKey);if(app)app.inert=previousInert;document.body.style.overflow=previousOverflow;triggerRef.current?.focus({preventScroll:true})};
+  },[open]);
+  return <><button ref={triggerRef} className="utilityButton" aria-haspopup="dialog" aria-expanded={open} aria-controls={open?'appearance-settings-dialog':undefined} aria-label="System settings" onClick={()=>setOpen(true)}><Settings2 size={18}/></button>{open&&createPortal(<div className="overlay appearanceOverlay" style={{'--accent':accent,'--pale':pale} as React.CSSProperties} onClick={()=>setOpen(false)}><section ref={dialogRef} id="appearance-settings-dialog" className="dialog appearanceDialog" role="dialog" aria-modal="true" aria-label="System settings" onClick={event=>event.stopPropagation()}><button className="close" aria-label="Close settings" onClick={()=>setOpen(false)}><X size={20}/></button><span className="eyebrow">MAKE YOURSELF AT HOME</span><h2>System settings</h2><p>Choose how Teamstride looks on this device.</p><fieldset><legend>Appearance</legend><div className="appearanceModes">{[{value:'light',label:'Light',Icon:Sun},{value:'dark',label:'Dark',Icon:Moon},{value:'system',label:'System',Icon:Monitor}].map(({value,label,Icon})=><button key={value} className={mode===value?'selected':''} aria-pressed={mode===value} onClick={()=>setMode(value)}><Icon size={24}/><span>{label}</span></button>)}</div><p className="hint">System follows your device’s light or dark appearance.</p></fieldset><label className="checklabel"><input type="checkbox" checked={reduceMotion} onChange={event=>setReduceMotion(event.target.checked)}/> Reduce animations</label><p className="hint">Your device’s reduced-motion preference is always respected.</p></section></div>,document.body)}</>;
 }
 export function RiskSummary({project}:{project:Project}){
   const schedule=projectSchedule(project);
