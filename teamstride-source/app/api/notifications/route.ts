@@ -1,3 +1,4 @@
+import {chatMentions,displayChatText} from '../../../lib/chat-mentions';
 import {z} from 'zod';
 import {identity,db,activeMember,failure,HttpError} from '../../../lib/server';
 import {projectSchedule,dayKey,reminderIsDue,type Project,type TaskReminder} from '../../../lib/model';
@@ -14,10 +15,12 @@ export async function GET(){
       if(project.deletedAt||!project.creatorId||!activeMember(project,user))continue;
       const mine=project.members.find(member=>member.userId===user.userId||member.email===user.email);
       for(const event of project.activities||[]){
-        if(event.actorUserId===user.userId||event.recipientMemberIds&&(!mine||!event.recipientMemberIds.includes(mine.id)))continue;
+        if(event.kind!=='assignment'&&event.actorUserId===user.userId||event.recipientMemberIds&&(!mine||!event.recipientMemberIds.includes(mine.id)))continue;
         const id=`event:${project.id}:${event.id}`;
         items.push({id,projectId:project.id,projectTitle:project.title,taskId:event.taskId,meetingId:event.meetingId,text:event.text,kind:event.kind,at:event.at,read:read.has(id)});
       }
+      const chat=await db().prepare('SELECT id,author_user_id,author_name,body,created_at FROM project_messages WHERE project_id=? ORDER BY rowid DESC LIMIT 150').bind(project.id).all<{id:string;author_user_id:string;author_name:string;body:string;created_at:string}>();
+      for(const message of chat.results){if(message.author_user_id===user.userId||!mine||!chatMentions(message.body,project).memberIds.includes(mine.id))continue;const id=`mention:${project.id}:${message.id}`;items.push({id,projectId:project.id,projectTitle:project.title,text:`${message.author_name} mentioned you: ${displayChatText(message.body).slice(0,240)}`,kind:'mention',at:message.created_at,read:read.has(id)})}
       if(project.status==='active')for(const reminder of reminders.filter(reminder=>reminder.projectId===project.id)){
        const task=project.tasks.find(task=>task.id===reminder.taskId);if(!task||!reminderIsDue(task,reminder))continue;
        const id=`reminder:${project.id}:${task.id}:${task.date}:${reminder.daysBefore}:${reminder.time}:${reminder.timeZone}`;

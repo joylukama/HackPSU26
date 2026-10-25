@@ -1,3 +1,4 @@
+import {chatMentions} from '../../../lib/chat-mentions';
 import {z} from 'zod';
 import {identity,db,load,activeMember,failure,HttpError} from '../../../lib/server';
 import {projectChatAI,type ProjectChatMessage} from '../../../lib/project-chat';
@@ -15,11 +16,13 @@ export async function POST(request:Request){
  try{
   const body=z.object({projectId:z.string().min(1).max(100),id:z.string().uuid(),text:z.string().trim().min(1).max(4000)}).parse(await request.json());
   const user=await access(body.projectId);
+  const {project:currentProject}=await load(body.projectId);if(currentProject.aiEnabled===false&&chatMentions(body.text,currentProject).ai)throw new HttpError(403,'AI is disabled for this project. You can still chat with your teammates.');
   const existing=await db().prepare('SELECT project_id,author_user_id,body FROM project_messages WHERE id=?').bind(body.id).first<{project_id:string;author_user_id:string;body:string}>();
   if(existing&&(existing.project_id!==body.projectId||existing.author_user_id!==user.userId||existing.body!==body.text))throw new HttpError(409,'This message changed. Send it as a new message.');
   if(!existing)await db().prepare('INSERT OR IGNORE INTO project_messages(id,project_id,author_user_id,author_name,role,body,created_at) VALUES (?,?,?,?,?,?,?)').bind(body.id,body.projectId,user.userId,user.displayName,'user',body.text,new Date().toISOString()).run();
   const message=await db().prepare(`SELECT ${columns} FROM project_messages WHERE id=? AND project_id=?`).bind(body.id,body.projectId).first<ProjectChatMessage>();
   if(!message||message.authorUserId!==user.userId||message.body!==body.text)throw new HttpError(409,'This message changed. Send it as a new message.');
-  return Response.json({message,ai:projectChatAI},{headers:{'Cache-Control':'private, no-store'}});
+  const {project}=await load(body.projectId);const mentions=chatMentions(body.text,project);
+  return Response.json({message,ai:projectChatAI,aiRequested:project.aiEnabled!==false&&mentions.ai,mentionedMemberIds:mentions.memberIds},{headers:{'Cache-Control':'private, no-store'}});
  }catch(error){if(error instanceof z.ZodError)return Response.json({error:'Enter a message of up to 4,000 characters.'},{status:400});return failure(error)}
 }

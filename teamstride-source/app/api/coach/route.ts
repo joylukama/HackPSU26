@@ -15,6 +15,7 @@ export async function POST(request:Request){
     const body=requestSchema.parse(await request.json());
     const {project}=await load(body.projectId);
     if(!activeMember(project,user))throw new HttpError(403,'Join this project before using its task coaches.');
+    if(project.aiEnabled===false)throw new HttpError(403,'AI assistants are disabled by this project’s admin.');
     const member=project.members.find(m=>m.id===body.memberId);
     if(!member)throw new HttpError(404,'Teammate not found.');
     const config=env as unknown as {OPENAI_API_KEY?:string;OPENAI_MODEL?:string};
