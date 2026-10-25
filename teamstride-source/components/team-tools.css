@@ -63,3 +63,7 @@ html[data-theme='dark'] .stat>span{background:var(--studio-soft);color:#d7c394}h
 .copyLinkStatus{font-size:11px;line-height:1.5;color:var(--accent);max-width:280px}
 .copyLinkStatus:empty{display:none}
 .copyProjectLink input{width:100%;max-width:340px;min-width:0;font-size:16px;padding:10px;border:1px solid var(--studio-line);border-radius:7px;background:var(--studio-surface);color:var(--studio-ink)}
+
+.projectProgressReport{margin:0 0 24px}.projectProgressReport .sectionTitle{gap:18px;flex-wrap:wrap}.projectProgressReport h3,.teammateReminder h3{display:flex;align-items:center;gap:8px}.reportActions{display:flex;gap:20px;flex-wrap:wrap;align-items:center}.reportActions button{display:flex;gap:6px;align-items:center;min-height:44px}.progressReportBody{border-top:1px solid var(--studio-line);margin-top:12px;padding-top:14px}.progressReportText{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.9;color:var(--studio-ink)}.teammateReminder{border-top:1px solid var(--studio-line);margin-top:20px;padding-top:16px}.teammateReminder textarea{min-height:80px}.teammateReminder .secondary{min-height:44px}
+
+.taskDialog .teammateReminder{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;border:0;margin:8px 0 18px;padding:0}.taskDialog .teammateReminder>.hint{margin:0;line-height:1.5}.taskDialog .teammateReminder>.banner{flex-basis:100%}
