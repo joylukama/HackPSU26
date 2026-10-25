@@ -50,10 +50,17 @@ export function applyCollaboration(project:Project,user:Identity,body:Record<str
     if(decision==='accept'){
       const from=project.tasks.find(task=>task.id===swap.fromTaskId),to=project.tasks.find(task=>task.id===swap.toTaskId);
       if(!from||!to||from.done||to.done||from.assignees.length!==1||to.assignees.length!==1||from.assignees[0]!==swap.fromMemberId||to.assignees[0]!==swap.toMemberId)throw new HttpError(409,'The tasks changed. Cancel this request and make a new one.');
-      from.assignees=[swap.toMemberId];to.assignees=[swap.fromMemberId];swap.status='accepted';
+      const sender=project.members.find(member=>member.id===swap.fromMemberId);
+      if(swap.fromMemberId===swap.toMemberId||!sender||sender.status!=='active'||sender.userId!==swap.requestedBy)throw new HttpError(409,'The teammates changed. Cancel this request and make a new one.');
+      // Replace each ownership list; never append a second assignee. Both transfers
+      // are persisted together by the project's compare-and-swap save.
+      project.tasks=project.tasks.map(task=>task.id===from.id?{...task,assignees:[swap.toMemberId]}:task.id===to.id?{...task,assignees:[swap.fromMemberId]}:task);
+      swap.status='accepted';
     }else swap.status='declined';
   }
-  recordActivity(project,user,'swap',`${user.displayName} ${swap.status} a task swap.`,swap.fromTaskId);
+  const fromName=project.members.find(member=>member.id===swap.fromMemberId)?.name||'Teammate',toName=receiver?.name||'Teammate';
+  const fromTitle=project.tasks.find(task=>task.id===swap.fromTaskId)?.title||'the offered task',toTitle=project.tasks.find(task=>task.id===swap.toTaskId)?.title||'the requested task';
+  recordActivity(project,user,'swap',swap.status==='accepted'?`Swap complete: ${toName} now owns “${fromTitle}”; ${fromName} now owns “${toTitle}”.`:`${user.displayName} ${swap.status} a task swap.`,swap.fromTaskId);
   return true;
 }
 export function invalidateSwaps(project:Project){
