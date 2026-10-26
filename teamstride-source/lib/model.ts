@@ -11,7 +11,7 @@ export type Identity={userId:string;email:string;displayName:string};
 export const phases=['Discover','Create','Refine','Deliver'];
 export const themes=[{id:'lilac',name:'Lilac dreams',color:'#7954cf',pale:'#f0e8ff'},{id:'peach',name:'Peach party',color:'#c66142',pale:'#ffebe1'},{id:'mint',name:'Mint condition',color:'#267969',pale:'#e0f4e8'},{id:'sky',name:'Blue skies',color:'#3d70b7',pale:'#e6f0ff'},{id:'pink',name:'Pink lemonade',color:'#b44982',pale:'#ffe6f2'}];
 export const uid=()=>typeof crypto.randomUUID==='function'?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
-export function createPlan(title:string,brief:string,members:Member[],start:string,end:string):Task[]{
+export function createPlan(title:string,brief:string,members:Member[],start:string,end:string,idForTask:(index:number)=>string=uid):Task[]{
 const text=(title+' '+brief).toLowerCase();
 const subject=title.trim().slice(0,80);
 let steps:[string,string,number][];
@@ -90,7 +90,7 @@ const requirements=brief.split(/[\n.;]+/).map(v=>v.trim()).filter(Boolean).slice
 return steps.map(([name,detail,phase],i)=>{
  const date=new Date(start+'T12:00:00Z');const duration=(Date.parse(end+'T12:00:00Z')-date.getTime())/86400000;
  date.setUTCDate(date.getUTCDate()+Math.round(duration*(i+1)/steps.length));
- return {id:uid(),title:(name+' — '+subject).slice(0,180),detail:(detail+'\nProject: '+title+'\nBrief: '+brief+(requirements.length?'\nFocus: '+requirements[i%requirements.length]:'')).slice(0,4000),assignees:i===6?members.map(m=>m.id):[members[i%members.length].id],phase,estimatedMinutes:estimateTaskMinutes({title:name,detail,phase}),date:date.toISOString().slice(0,10),done:false,comments:[]};
+ return {id:idForTask(i),title:(name+' — '+subject).slice(0,180),detail:(detail+'\nProject: '+title+'\nBrief: '+brief+(requirements.length?'\nFocus: '+requirements[i%requirements.length]:'')).slice(0,4000),assignees:i===6?members.map(m=>m.id):[members[i%members.length].id],phase,estimatedMinutes:estimateTaskMinutes({title:name,detail,phase}),date:date.toISOString().slice(0,10),done:false,comments:[]};
 });
 }
 

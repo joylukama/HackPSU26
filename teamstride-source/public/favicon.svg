@@ -1,6 +1,15 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M22 19.2727C22 20.779 20.779 22 19.2727 22H14.7273C13.221 22 12 20.779 12 19.2727V12H19.2727C20.779 12 22 13.221 22 14.7273V19.2727Z" fill="#68C4FF"/>
-<path d="M20 2C21.1046 2 22 2.89543 22 4V7C22 8.10457 21.1046 9 20 9H17C15.8954 9 15 8.10457 15 7V4C15 2.89543 15.8954 2 17 2H20Z" fill="#0C79D8"/>
-<path d="M7 15C8.10457 15 9 15.8954 9 17V20C9 21.1046 8.10457 22 7 22H4C2.89543 22 2 21.1046 2 20V17C2 15.8954 2.89543 15 4 15H7Z" fill="#0C79D8"/>
-<path d="M12 12H4.72727C3.22104 12 2 10.779 2 9.27273V4.72727C2 3.22104 3.22104 2 4.72727 2H9.27273C10.779 2 12 3.22104 12 4.72727V12Z" fill="#2E9EFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="175 40 450 450" fill="none">
+<title>Teamstride</title>
+<style>
+:root{--logo-deep:#7954b5;--logo-teal:#a887cf;--logo-green:#d6bf9a;--logo-tip:#efd47e;--logo-fold:#9470bd}
+@media(prefers-color-scheme:dark){:root{--logo-deep:#7ea8cc;--logo-teal:#4eafbb;--logo-green:#79d0a6;--logo-tip:#b5e3a0;--logo-fold:#527fa4}}
+</style>
+<defs>
+<linearGradient id="arrow" x1="195" y1="231" x2="607" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="var(--logo-deep)"/><stop offset=".48" stop-color="var(--logo-teal)"/><stop offset=".82" stop-color="var(--logo-green)"/><stop offset="1" stop-color="var(--logo-tip)"/></linearGradient>
+<linearGradient id="stem" x1="323" y1="430" x2="499" y2="203" gradientUnits="userSpaceOnUse"><stop stop-color="var(--logo-deep)"/><stop offset=".55" stop-color="var(--logo-teal)"/><stop offset="1" stop-color="var(--logo-green)"/></linearGradient>
+<linearGradient id="fold" x1="322" y1="405" x2="396" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="var(--logo-deep)"/><stop offset="1" stop-color="var(--logo-fold)"/></linearGradient>
+</defs>
+<path d="M192 242C184 242 184 237 189 230L216 198C232 182 251 174 278 174H390C444 174 495 145 534 106L512 97C506 95 506 90 512 88L602 55C609 52 612 55 609 64L580 151C578 159 574 160 569 152L554 128C520 173 479 195 421 216L353 239C345 242 333 242 319 242H192Z" fill="url(#arrow)"/>
+<path d="M319 475V331C319 291 340 264 377 244L505 192C504 229 495 255 466 270L397 307V425C397 438 394 443 383 449L325 479C321 481 319 480 319 475Z" fill="url(#stem)"/>
+<path d="M319 475V371C326 341 353 318 397 301V425C397 438 394 443 383 449L325 479C321 481 319 480 319 475Z" fill="url(#fold)"/>
 </svg>
