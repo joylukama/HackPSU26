@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+<title>Teamstride</title>
+<style>
+:root{--logo-deep:#7954b5;--logo-teal:#a887cf;--logo-green:#d6bf9a;--logo-tip:#efd47e;--logo-fold:#9470bd}
+
+</style>
+<defs>
+<linearGradient id="arrow" x1="195" y1="231" x2="607" y2="62" gradientUnits="userSpaceOnUse"><stop stop-color="#7954b5"/><stop offset=".48" stop-color="#a887cf"/><stop offset=".82" stop-color="#d6bf9a"/><stop offset="1" stop-color="#efd47e"/></linearGradient>
+<linearGradient id="stem" x1="323" y1="430" x2="499" y2="203" gradientUnits="userSpaceOnUse"><stop stop-color="#7954b5"/><stop offset=".55" stop-color="#a887cf"/><stop offset="1" stop-color="#d6bf9a"/></linearGradient>
+<linearGradient id="fold" x1="322" y1="405" x2="396" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="#7954b5"/><stop offset="1" stop-color="#9470bd"/></linearGradient>
+</defs>
+<rect width="512" height="512" fill="#f7f5ef"/><g transform="translate(77 77) scale(0.795555556) translate(-175 -40)"><path d="M192 242C184 242 184 237 189 230L216 198C232 182 251 174 278 174H390C444 174 495 145 534 106L512 97C506 95 506 90 512 88L602 55C609 52 612 55 609 64L580 151C578 159 574 160 569 152L554 128C520 173 479 195 421 216L353 239C345 242 333 242 319 242H192Z" fill="url(#arrow)"/>
+<path d="M319 475V331C319 291 340 264 377 244L505 192C504 229 495 255 466 270L397 307V425C397 438 394 443 383 449L325 479C321 481 319 480 319 475Z" fill="url(#stem)"/>
+<path d="M319 475V371C326 341 353 318 397 301V425C397 438 394 443 383 449L325 479C321 481 319 480 319 475Z" fill="url(#fold)"/>
+</g></svg>

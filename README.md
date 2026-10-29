@@ -139,3 +139,9 @@ System settings provide **Light**, **Dark**, and **System** appearance plus redu
 - Uploads begin after the project is saved. If any fail, the project is retained and the page offers a retry for the failed files.
 - **Projects → Project admin → Delete project** moves a project to Trash after confirming its name. Only the creator can delete or restore it. Restore from **Profile → Deleted projects**. Trashed projects are hidden from teammates, notifications, calendars, and invitation access; their tasks, discussions, and materials are retained for restoration.
 - New generated and manually created tasks receive an estimated active work time. Estimates are visible on task cards and can be adjusted in the task editor. Existing tasks show a fallback estimate without replacing their saved content. Estimates are planning aids rather than guaranteed completion times.
+
+## Install Teamstride on your phone
+
+Open https://www.teamstride.work and use **Install Teamstride** on My dashboard for installation instructions. On iPhone/iPad, use Safari’s Share menu → Add to Home Screen. On Android, use Chrome’s Install app or Add to Home screen menu. The manifest and logo icons support standalone app launch.
+
+This is an online-first PWA: shared tasks, chat, files, and AI require internet. No service worker or offline private-data cache is registered. Sign-in continues to use Sites’ ChatGPT authentication. Publish future changes normally; reopen the installed app to load the current website. A physical-device installation and sign-in check is still recommended for each target phone/browser.
